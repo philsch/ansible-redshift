@@ -55,6 +55,9 @@ def check_flags(flags, level):
 
 
 def user_exists(cursor, user):
+    if user is None or user == '':
+        return True
+
     query = "SELECT usename FROM pg_user_info WHERE usename=%(user)s"
     cursor.execute(query, {"user": user})
     return cursor.fetchone() is not None
@@ -91,6 +94,37 @@ def user_delete(cursor, user):
     return True
 
 
+def group_exists(cursor, group):
+    """Check if a group exists"""
+    if group is None or group == '':
+        return True
+
+    query = "select groname from pg_group where groname=%(group)s"
+    cursor.execute(query, {"group": group})
+    return cursor.fetchone() is not None
+
+
+def group_add(cursor, group):
+    """Create a new group"""
+    query_params = {'group': group}
+    query = ['CREATE GROUP %(group)s']
+
+    query = ' '.join(query)
+
+    cursor.execute(query % query_params)
+    return True
+
+
+def group_delete(cursor, group):
+    """Try to delete a group"""
+    query_params = {'group': group}
+    query = ['DROP GROUP %(group)s']
+
+    query = ' '.join(query)
+
+    cursor.execute(query % query_params)
+    return True
+
 
 # ===========================================
 # Module execution.
@@ -110,7 +144,6 @@ def main():
             group=dict(default=''),
             schema=dict(default=''),
             state=dict(default="present", choices=["absent", "present"]),
-            fail_on_user=dict(type='bool', default='yes'),
             permission_flags=dict(default=[], type='list'),
             priv=dict(default=[], type='list'),
             no_password_changes=dict(type='bool', default='no'),
@@ -123,7 +156,6 @@ def main():
     user = module.params["user"]
     password = module.params["password"]
     state = module.params["state"]
-    fail_on_user = module.params["fail_on_user"]
     db = module.params["db"]
     group = module.params["group"]
     schema = module.params["schema"]
@@ -166,28 +198,34 @@ def main():
         e = get_exception()
         module.fail_json(msg="unable to connect to database: %s" % e)
 
-    kw = {'user': user}
+    kw = {'user': user, 'group': group}
     changed = False
     user_removed = False
+    group_removed = False
 
     # ===========================================
     # Main decision tree
     #
     try:
         if state == "present":
-            if user_exists(cursor, user):
-                changed = False
-            else:
+            if not user_exists(cursor, user):
                 user_add(cursor, user, password, permission_flags, expires, conn_limit)
+                changed = True
+
+            if not group_exists(cursor, group):
+                group_add(cursor, group)
                 changed = True
         # absent case
         else:
-            if not user_exists(cursor, user):
-                changed = False
-            else:
+            if user != '' and user_exists(cursor, user):
                 user_delete(cursor, user)
                 changed = True
                 user_removed = True
+
+            if group != '' and group_exists(cursor, group):
+                group_delete(cursor, group)
+                changed = True
+                group_removed = True
 
 
     except ValueError:
@@ -207,6 +245,7 @@ def main():
 
     kw['changed'] = changed
     kw['user_removed'] = user_removed
+    kw['group_removed'] = group_removed
     module.exit_json(**kw)
 
 

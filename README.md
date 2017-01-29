@@ -18,9 +18,77 @@ The machine targeted by Ansible needs to have installed:
 
 ### Installation
 
-### Create Users / Groups
+### Redshift Users / Groups
+
+**Create a normal user**
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase 
+    user=newRsUser
+    password=passwF0rN3wRsUser 
+```
+
+**Create a superuser**
 
 *Note* The permission `SUPERUSER` will be transformed to Redshifts equivalent `CREATEUSER` permission.
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase 
+    user=newRsUser
+    password=passwF0rN3wRsUser 
+    permission_flags=SUPERUSER
+```
+
+**Create a group**
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase 
+    group=newRsGroup
+```
+
+**Combination of parameters**
+
+*Note* This statement will create user and group (if not already existing) and assign the user to that group.
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    user=newRsUser
+    password=passwF0rN3wRsUser
+    group=newRsGroup
+```
+
+**Deleting users / groups**
+
+*Note* A user or group can only be deleted if not permissions are assigned anymore for this resource.
+This is something you have to do manually at the moment!
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    user=newRsUser
+    password=passwF0rN3wRsUser
+    group=newRsGroup
+    state=absent
+```
+
 
 ### Grant privileges
 
