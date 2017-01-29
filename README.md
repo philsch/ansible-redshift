@@ -7,4 +7,4 @@ Module to manage AWS Redshift:
  
 ## under development
 
-No version has been released so far, but you can find the latest code in the [develop branch](tree/develop).
+No version has been released so far, but you can find the latest code in the *develop* branch.
