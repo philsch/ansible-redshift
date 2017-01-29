@@ -57,9 +57,13 @@ The machine targeted by Ansible needs to have installed:
     group=newRsGroup
 ```
 
-**Combination of parameters**
+**Assign an user to groups**
 
 *Note* This statement will create user and group (if not already existing) and assign the user to that group.
+
+*Note* If a user is part of other groups, the user will be removed from all groups which are not specified.
+
+**Note** This module currently does *only* support a 1:1 relationship of user and group!
 
 ```
 - redshift_user:
@@ -72,9 +76,23 @@ The machine targeted by Ansible needs to have installed:
     group=newRsGroup
 ```
 
+**Remove a user from all groups**
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    user=newRsUser
+    password=passwF0rN3wRsUser
+    # no group given 
+    # state is implicit 'present' ('absent' would try to delete the user)
+```
+
 **Deleting users / groups**
 
-*Note* A user or group can only be deleted if not permissions are assigned anymore for this resource.
+*Note* A user or group can only be deleted if no permissions are assigned anymore for this resource.
 This is something you have to do manually at the moment!
 
 ```
@@ -108,6 +126,12 @@ not have this dependency, a python library without external dependencies was use
 
 Redshift is not PostgreSQL, however we use a psql library for this module. This does the job, but at some points
 the library does not behave as expected, e.g. `cursor.rowcount` is not working.
+
+*Why is the result of a task always 'changed'?*
+
+I haven't found a way so far to check if the password of a user has actually changed or not. So even if no
+input parameter has changed, the module still sends an `ALTER` command to Redshift. But you can see from the
+other returned flags what was / will be changed.
 
 *Contribute!*
 

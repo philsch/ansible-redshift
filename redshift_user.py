@@ -54,6 +54,21 @@ def check_flags(flags, level):
     return mapped_flags
 
 
+def get_user_id(cursor, user):
+    """Try to get the user id of the given user"""
+    query_params = {'user': user}
+    query = ['SELECT usesysid FROM pg_user_info WHERE usename=\'%(user)s\' LIMIT 1']
+
+    query = ' '.join(query)
+    cursor.execute(query % query_params)
+    user = cursor.fetchone()
+
+    if user is None:
+        raise ValueError('Internal error: couldn\'t find user to get id')
+
+    return user[0]
+
+
 def user_exists(cursor, user):
     if user is None or user == '':
         return True
@@ -63,10 +78,13 @@ def user_exists(cursor, user):
     return cursor.fetchone() is not None
 
 
-def user_add(cursor, user, password, flags, expires, conn_limit):
+def user_change(cursor, user, password, flags, expires, conn_limit, type = 'CREATE'):
     """Create a Redshift user"""
-    query_params = {'user': user, 'password': password, 'expires': expires, 'conn_limit': conn_limit}
-    query = ['CREATE USER %(user)s WITH PASSWORD \'%(password)s\'']
+    if user is None or user == '':
+        return True
+
+    query_params = {'type': type, 'user': user, 'password': password, 'expires': expires, 'conn_limit': conn_limit}
+    query = ['%(type)s USER %(user)s WITH PASSWORD \'%(password)s\'']
 
     if password is None:
         raise ValueError('Password must not be empty when creating a user')
@@ -123,6 +141,33 @@ def group_delete(cursor, group):
     query = ' '.join(query)
 
     cursor.execute(query % query_params)
+    return True
+
+
+def group_assign(cursor, group, user):
+    """Adds user to the group and removes the user from not mentioned groups"""
+    #TODO: support multiple groups
+
+    user_id = get_user_id(cursor, user)
+
+    query_params = {'uid': user_id}
+    query = ['SELECT groname FROM pg_group']
+    query.append('WHERE array_to_string(grolist, \',\') ~ \'^%(uid)s$|^%(uid)s,.*|.*,%(uid)s,.*|.*,%(uid)s$\';')
+    query = ' '.join(query)
+    cursor.execute(query % query_params)
+    list_of_groups = map(lambda el: el[0], cursor.fetchall())
+
+    for member_of_group in list_of_groups:
+        if member_of_group != group:
+            query_params = {'drop_group': member_of_group, 'drop_user': user}
+            query = 'ALTER GROUP %(drop_group)s DROP USER %(drop_user)s'
+            cursor.execute(query % query_params)
+
+    if group is not None and group != '':
+        query_params = {'group': group, 'add_user': user}
+        query = 'ALTER GROUP %(group)s ADD USER %(add_user)s'
+        cursor.execute(query % query_params)
+
     return True
 
 
@@ -200,6 +245,8 @@ def main():
 
     kw = {'user': user, 'group': group}
     changed = False
+    user_added = False
+    group_added = False
     user_removed = False
     group_removed = False
 
@@ -209,15 +256,24 @@ def main():
     try:
         if state == "present":
             if not user_exists(cursor, user):
-                user_add(cursor, user, password, permission_flags, expires, conn_limit)
+                user_change(cursor, user, password, permission_flags, expires, conn_limit)
+                changed = True
+                user_added = True
+            else:
+                user_change(cursor, user, password, permission_flags, expires, conn_limit, 'ALTER')
                 changed = True
 
             if not group_exists(cursor, group):
                 group_add(cursor, group)
                 changed = True
+                group_added = True
+
+            group_assign(cursor, group, user)
+
         # absent case
         else:
             if user != '' and user_exists(cursor, user):
+                group_assign(cursor, None, user)
                 user_delete(cursor, user)
                 changed = True
                 user_removed = True
@@ -244,6 +300,8 @@ def main():
     cursor.close()
 
     kw['changed'] = changed
+    kw['user_added'] = user_added
+    kw['group_added'] = group_added
     kw['user_removed'] = user_removed
     kw['group_removed'] = group_removed
     module.exit_json(**kw)
