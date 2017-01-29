@@ -28,7 +28,9 @@ The machine targeted by Ansible needs to have installed:
     login_password=123456Abcdef 
     db=myDatabase 
     user=newRsUser
-    password=passwF0rN3wRsUser 
+    password=passwF0rN3wRsUser
+    expires='2017-01-01 00:00'
+    conn_limit=10
 ```
 
 **Create a superuser**
@@ -43,7 +45,22 @@ The machine targeted by Ansible needs to have installed:
     db=myDatabase 
     user=newRsUser
     password=passwF0rN3wRsUser 
-    permission_flags=SUPERUSER
+    permission_flags:
+        - SUPERUSER
+```
+
+**Revoke superuser rights**
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase 
+    user=newRsUser
+    password=passwF0rN3wRsUser 
+    permission_flags:
+        - NOSUPERUSER
 ```
 
 **Create a group**
@@ -108,12 +125,79 @@ This is something you have to do manually at the moment!
 ```
 
 
-### Grant privileges
+### Privileges
 
-**Note** Granting access to a schema will *not* give automatically access to all tables in this schema.
-See http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
+For all calls to grant / revoke privileges, the `state` parameter has to be set to *present* (default). 
+An *absent* state will always trigger a deletion of an user or group!
 
+Refer also to the official AWS documentation how to set the privileges:
+http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
 
+**Grant full access to all tables of Schemas**
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    user=newRsUser
+    password=passwF0rN3wRsUser
+    privs:
+        - rsSchemaA:USAGE/ALL:ALL
+    state=present
+```
+
+**Grant specific rights to different tables of Schemas**
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    user=newRsUser
+    password=passwF0rN3wRsUser
+    privs:
+        - rsSchemaA:USAGE/ALL:ALL
+        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:AL
+    state=present
+```
+
+**Grant rights for a group**
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    group=rsGroup
+    privs:
+        - rsSchemaA:USAGE/ALL:ALL
+        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:AL
+    state=present
+```
+
+**Revoke rights**
+
+**Note** In this current module version you have to call all schemas you gave rights like this.
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    group=rsGroup
+    privs:
+        - rsSchemaA #will remove all privileges from rsSchemaA and its tables
+        - rsSchemaB #will remove all privileges from rsSchemaB and its tables
+```
+
+**Set rights on database level**
+
+Not supported in this module version (yet)
  
 ## Developers FAQ
 

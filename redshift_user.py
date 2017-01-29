@@ -31,7 +31,10 @@ PERMISSION_LEVEL_USER = 'user'
 
 _flags = ('SUPERUSER', 'CREATEUSER', 'CREATEDB')
 VALID_FLAGS_USER = frozenset(itertools.chain(_flags, ('NO%s' % f for f in _flags)))
-ALIAS_FLAGS_USER = {'SUPERUSER': 'CREATEUSER'}
+ALIAS_FLAGS_USER = {'SUPERUSER': 'CREATEUSER', 'NOSUPERUSER': 'NOCREATEUSER'}
+VALID_FLAGS_DB = ('CREATE', 'TEMPORARY', 'TEMP', 'ALL')
+VALID_FLAGS_SCHEMA = ('CREATE', 'USAGE', 'ALL')
+VALID_FLAGS_TABLE = ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'REFERENCES', 'ALL')
 
 
 # ===========================================
@@ -46,12 +49,37 @@ def check_flags(flags, level):
 
     mapped_flags = []
     for flag in flags:
-        if ALIAS_FLAGS_USER[flag] is not None:
+        if flag in ALIAS_FLAGS_USER and ALIAS_FLAGS_USER[flag] is not None:
             mapped_flags.append(ALIAS_FLAGS_USER[flag])
         else:
             mapped_flags.append(flag)
 
     return mapped_flags
+
+
+def parse_and_check_privs(elements):
+    """Reads a list of format schema:priv1,priv2/tableA:privs/tableB:privs and transforms it to a dictionary"""
+    privs_dict = {}
+
+    # TODO: call check_flags
+
+    for priv_string in elements:
+        privs_parts = priv_string.split('/', 1)
+        if len(privs_parts) == 1:
+            schema = privs_parts[0].split(':')[0]
+            privs_dict[schema] = {'priv': None}
+            continue
+
+        (schema_part, tables_part_string) = privs_parts
+        tables_part = tables_part_string.split('/')
+
+        (schema, schema_privs) = schema_part.split(':')
+        privs_dict[schema] = {'priv': schema_privs, 'tables': {}}
+        for table_part in tables_part:
+            (table, table_privs) = table_part.split(':')
+            privs_dict[schema]['tables'][table] = table_privs
+
+    return privs_dict
 
 
 def get_user_id(cursor, user):
@@ -171,6 +199,59 @@ def group_assign(cursor, group, user):
     return True
 
 
+def apply_privs(cursor, privs, user, group):
+    """Set permissions for schema"""
+    if user != '' and group != '':
+        raise ValueError('Privileges can not be set for user and group at the same time')
+
+    privs_map = parse_and_check_privs(privs)
+    for (schema, schema_dict) in iteritems(privs_map):
+        query_params = {'group': group, 'user': user, 'schema': schema}
+        query = ['REVOKE ALL ON SCHEMA %(schema)s ']
+        if user != '':
+            query.append('FROM %(user)s')
+        if group != '':
+            query.append('FROM GROUP %(group)s')
+        query = ' '.join(query)
+        cursor.execute(query % query_params)
+
+        query = ['REVOKE ALL ON ALL TABLES IN SCHEMA %(schema)s ']
+        if user != '':
+            query.append('FROM %(user)s')
+        if group != '':
+            query.append('FROM GROUP %(group)s')
+        query = ' '.join(query)
+        cursor.execute(query % query_params)
+
+        if schema_dict['priv'] is None or schema_dict['priv'] == '':
+            continue
+
+        query_params = {'group': group, 'user': user, 'privs': schema_dict['priv'], 'schema': schema}
+        query = ['GRANT %(privs)s ON SCHEMA %(schema)s ']
+        if user != '':
+            query.append('TO %(user)s')
+        if group != '':
+            query.append('TO GROUP %(group)s')
+        query = ' '.join(query)
+        cursor.execute(query % query_params)
+
+        for (table, table_privs) in iteritems(schema_dict['tables']):
+            query_params = {'group': group, 'user': user, 'privs': table_privs, 'schema': schema, 'table': table}
+            query = ['GRANT %(privs)s']
+            if table == 'ALL':
+                query.append('ON ALL TABLES IN SCHEMA %(schema)s')
+            else:
+                query.append('ON TABLE %(schema)s.%(table)s')
+            if user != '':
+                query.append('TO %(user)s')
+            if group != '':
+                query.append('TO GROUP %(group)s')
+
+            query = ' '.join(query)
+            cursor.execute(query % query_params)
+
+    return True
+
 # ===========================================
 # Module execution.
 #
@@ -187,11 +268,9 @@ def main():
             user=dict(default=''),
             password=dict(default=None, no_log=True),
             group=dict(default=''),
-            schema=dict(default=''),
             state=dict(default="present", choices=["absent", "present"]),
             permission_flags=dict(default=[], type='list'),
-            priv=dict(default=[], type='list'),
-            no_password_changes=dict(type='bool', default='no'),
+            privs=dict(default=[], type='list'),
             expires=dict(default=None),
             conn_limit=dict(default=None)
         ),
@@ -203,13 +282,9 @@ def main():
     state = module.params["state"]
     db = module.params["db"]
     group = module.params["group"]
-    schema = module.params["schema"]
-    if db == '' and user == '' and group == '' and schema == '':
-        module.fail_json(msg="At least db, user, group or schema must be set")
     port = module.params["port"]
-    no_password_changes = module.params["no_password_changes"]
     permission_flags = module.params["permission_flags"]
-    priv = module.params["priv"]
+    privs = module.params["privs"]
     expires = module.params["expires"]
     conn_limit = module.params["conn_limit"]
 
@@ -269,6 +344,7 @@ def main():
                 group_added = True
 
             group_assign(cursor, group, user)
+            apply_privs(cursor, privs, user, group)
 
         # absent case
         else:
