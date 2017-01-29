@@ -1,0 +1,6 @@
+
+# IDE
+.idea
+
+# Ansible specific
+ansible
