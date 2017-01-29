@@ -160,7 +160,7 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     password=passwF0rN3wRsUser
     privs:
         - rsSchemaA:USAGE/ALL:ALL
-        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:AL
+        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
     state=present
 ```
 
@@ -175,7 +175,7 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     group=rsGroup
     privs:
         - rsSchemaA:USAGE/ALL:ALL
-        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:AL
+        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
     state=present
 ```
 
