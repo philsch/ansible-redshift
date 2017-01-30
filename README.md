@@ -18,6 +18,17 @@ The machine targeted by Ansible needs to have installed:
 
 ### Installation
 
+Copy the provided Python scripts into a location for Ansible libraries.
+
+From the Ansible documentation:
+
+> This is the default location Ansible looks to find modules:
+>    
+>    library = /usr/share/ansible
+>
+> Ansible knows how to look in multiple locations if you feed it a colon separated path, and it also will 
+> look for modules in the ”./library” directory alongside a playbook.
+
 ### Redshift Users / Groups
 
 **Create a normal user**
