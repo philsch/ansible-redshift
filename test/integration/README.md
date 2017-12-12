@@ -16,4 +16,5 @@ This integration test uses Ansible to test and verify the Redshift module.
 export ANSIBLE_LIBRARY=../../lib/ && ansible-playbook 000_test_all.yml -i "127.0.0.1," --user ssh-user
 ```
 
-Replace `127.0.0.1` with the host which has access to Redshift and don't forget the trailing comma!
+Replace `127.0.0.1` with the host which has access to Redshift (don't forget the trailing comma!) and
+set the ssh user via the `--user` flag. Use `ssh-add` to add your ssh key before running the test.

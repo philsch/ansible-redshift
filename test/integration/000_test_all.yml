@@ -7,3 +7,4 @@
 - include: 101_test_create_user_group.yml
 - include: 102_test_create_user_group_revoke.yml
 - include: 103_test_create_superuser_revoke.yml
+- include: 104_test_delete_user_group.yml
