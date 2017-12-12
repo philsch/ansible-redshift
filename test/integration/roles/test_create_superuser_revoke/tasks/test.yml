@@ -23,7 +23,7 @@
   register: r_psql
   failed_when: "r_psql.stdout == ''"
 
-- name: Create Non-Superuser
+- name: Change to Non-Superuser
   redshift_user:
     login_host: "{{ redshift_host }}"
     login_user: "{{ redshift_user }}"
