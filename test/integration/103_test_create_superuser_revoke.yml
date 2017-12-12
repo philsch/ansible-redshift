@@ -1,0 +1,7 @@
+---
+
+- name: Test superuser and revoke superuse rights
+  hosts: all
+  roles:
+    - prepare
+    - test_create_superuser_revoke
