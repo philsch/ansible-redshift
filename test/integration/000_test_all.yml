@@ -5,3 +5,4 @@
 
 - include: 100_test_create_user.yml
 - include: 101_test_create_user_group.yml
+- include: 102_test_create_user_group_revoke.yml

@@ -217,7 +217,7 @@ def group_assign(cursor, group, user):
 
 def apply_privs(cursor, privs, user, group):
     """Set permissions for schema"""
-    if user != '' and group != '':
+    if user != '' and group != '' and len(privs) > 0:
         raise ValueError('Privileges can not be set for user and group at the same time')
 
     privs_map = parse_and_check_privs(privs)
@@ -355,15 +355,13 @@ def main():
                 user_change(cursor, user, password, permission_flags, expires, conn_limit, 'ALTER')
                 changed = True
 
-            if group != '':
-                if not group_exists(cursor, group):
-                    group_add(cursor, group)
-                    changed = True
-                    group_added = True
-                group_assign(cursor, group, user)
+            if group != '' and not group_exists(cursor, group):
+                group_add(cursor, group)
+                changed = True
+                group_added = True
 
-            if len(privs) > 0:
-                apply_privs(cursor, privs, user, group)
+            group_assign(cursor, group, user)
+            apply_privs(cursor, privs, user, group)
 
         # absent case
         else:

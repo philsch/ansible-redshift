@@ -21,8 +21,6 @@
     -t -c 'DROP USER {{ item }}'
   with_items:
     - "{{ prefix_user }}user1"
-    - "{{ prefix_user }}user2"
-    - "{{ prefix_user }}user3"
   register: r_psql
   failed_when: "r_psql.stderr != '' and 'does not exist' not in r_psql.stderr"
 
