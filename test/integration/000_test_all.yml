@@ -1,0 +1,7 @@
+---
+
+# -------------------------------------
+# Integration testing
+
+- name: Test Create User
+  include: 100_test_create_user.yml

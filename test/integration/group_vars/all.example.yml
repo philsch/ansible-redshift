@@ -1,0 +1,14 @@
+---
+
+# Redshift connection details
+redshift_host: your-redshift.abcdefg.eu-west-1.redshift.amazonaws.com
+redshift_port: 5439
+redshift_db: database
+redshift_user: rs_master
+redshift_password: password
+
+# test machine settings
+psql_client: "psql" # you might need to adjust this if your target machines psql client is named differently
+prefix_user: "test_" # prefix used when creating test users (lowercase only!)
+prefix_group: "test_grp_" # prefix used when creating test groups (lowercase only!)
+

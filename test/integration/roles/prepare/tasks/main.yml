@@ -1,0 +1,27 @@
+---
+
+- name: Ensure psql client installed (check all.yml and installed packages if this fails!)
+  command: "which {{ psql_client }}"
+
+- name: Test Redshift connection (check all.yml if this fails!)
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c 'SELECT 1;'
+  register: r_psql
+
+- name: Ensure no test user is present
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c 'DROP USER {{ item }}'
+  with_items:
+    - "{{ prefix_user }}user1"
+    - "{{ prefix_user }}user2"
+    - "{{ prefix_user }}user3"
+  register: r_psql
+  failed_when: "r_psql.stderr != '' and 'does not exist' not in r_psql.stderr"

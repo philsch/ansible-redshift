@@ -325,8 +325,9 @@ def main():
     if is_localhost and module.params["login_unix_socket"] != "":
         kw["host"] = module.params["login_unix_socket"]
 
+    cursor = None
     try:
-        pg8000.paramstyle = "pyformat";
+        pg8000.paramstyle = "pyformat"
         db_connection = pg8000.connect(**kw)
         db_connection.autocommit = False
         cursor = db_connection.cursor()
@@ -354,12 +355,13 @@ def main():
                 user_change(cursor, user, password, permission_flags, expires, conn_limit, 'ALTER')
                 changed = True
 
-            if not group_exists(cursor, group):
-                group_add(cursor, group)
-                changed = True
-                group_added = True
+            if group != '':
+                if not group_exists(cursor, group):
+                    group_add(cursor, group)
+                    changed = True
+                    group_added = True
+                group_assign(cursor, group, user)
 
-            group_assign(cursor, group, user)
             apply_privs(cursor, privs, user, group)
 
         # absent case
