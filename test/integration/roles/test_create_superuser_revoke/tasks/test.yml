@@ -1,0 +1,57 @@
+---
+
+- name: Create Superuser
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    password: "passwF0rN3wRsUser"
+    conn_limit: "10"
+    permission_flags:
+      - SUPERUSER
+
+- name: Validate Superuser
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c "SELECT * FROM pg_user WHERE usename = '{{ prefix_user }}user1' AND usesuper = true;"
+  register: r_psql
+  failed_when: "r_psql.stdout == ''"
+
+- name: Change to Non-Superuser
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    password: "passwF0rN3wRsUser"
+    conn_limit: "10"
+    permission_flags:
+      - NOSUPERUSER
+
+- name: Validate user has no superuser rights anymore
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c "SELECT * FROM pg_user WHERE usename = '{{ prefix_user }}user1' AND usesuper = true;"
+  register: r_psql
+  failed_when: "r_psql.stdout != ''"
+
+- name: Validate user still exists
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c "SELECT * FROM pg_user WHERE usename = '{{ prefix_user }}user1';"
+  register: r_psql
+  failed_when: "r_psql.stdout == ''"

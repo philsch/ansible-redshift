@@ -1,0 +1,24 @@
+---
+
+- name: Create Testuser And Group
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    group: "{{ prefix_group }}group1"
+    password: "passwF0rN3wRsUser"
+    conn_limit: "10"
+
+- name: Remove Testuser And Group
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    group: "{{ prefix_group }}group1"
+    state: 'absent'

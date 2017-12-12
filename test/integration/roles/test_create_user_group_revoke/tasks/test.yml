@@ -1,0 +1,49 @@
+---
+
+- name: Create Testuser And Group
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    group: "{{ prefix_group }}group1"
+    password: "passwF0rN3wRsUser"
+    conn_limit: "10"
+
+- name: Validate Association
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c "SELECT * FROM pg_group, pg_user WHERE pg_user.usesysid = ANY(pg_group.grolist) AND groname IN ('{{ prefix_group }}group1');"
+  register: r_psql
+  failed_when: "r_psql.stdout == ''"
+
+# This simulates we change our Ansible configuration
+# and run the module without a group. According to the
+# state machine principal this means the group association
+# has to be removed.
+
+- name: Update Testuser has no group
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    password: "passwF0rN3wRsUser"
+    conn_limit: "10"
+
+- name: Validate Association has been revoked
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c "SELECT * FROM pg_group, pg_user WHERE pg_user.usesysid = ANY(pg_group.grolist) AND groname IN ('{{ prefix_group }}group1');"
+  register: r_psql
+  failed_when: "r_psql.stdout != ''"

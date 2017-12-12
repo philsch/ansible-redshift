@@ -1,0 +1,32 @@
+---
+
+- name: Validate Testuser
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c "SELECT * FROM pg_user WHERE usename = '{{ prefix_user }}user1';"
+  register: r_psql
+  failed_when: "r_psql.stdout == ''"
+
+- name: Validate Group
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c "SELECT * FROM pg_group WHERE groname = '{{ prefix_group }}group1';"
+  register: r_psql
+  failed_when: "r_psql.stdout == ''"
+
+- name: Validate Association
+  environment:
+    PGPASSWORD: "{{ redshift_password }}"
+  command: >
+    {{psql_client}}
+    --host "{{ redshift_host }}" --port "{{ redshift_port }}" --user "{{ redshift_user }}" {{ redshift_db }}
+    -t -c "SELECT * FROM pg_group, pg_user WHERE pg_user.usesysid = ANY(pg_group.grolist) AND groname IN ('{{ prefix_group }}group1');"
+  register: r_psql
+  failed_when: "r_psql.stdout == ''"
+
