@@ -7,6 +7,17 @@ Module to manage Redshift:
  
 This module is inspired by the prostresql_user core module of Ansible, but uses the SQL syntax needed by Redshift.
 
+## Integration Testing
+
+|                     | Function                         | Note                                                               |
+| ------------------- | -------------------------------- | ------------------------------------------------------------------ |
+| :white_check_mark:  | Create Users / Groups            |                                                                    |
+| :white_check_mark:  | Delete Users / Groups            |                                                                    |                                      
+| :white_check_mark:  | Set / Revoke SUPERUSER           |                                                                    |                                      
+| :white_check_mark:  | Associate User and Group         | Only 1:1, see [Assign an user to groups](#assign-an-user-to-groups)|
+| :warning:           | Schema / Table privileges        | No integration tests yet                                           |   
+
+See [test/integration/](test/integration/) for details. Tested with Ansible 2.2.1 and Redshift Custer 1.0.1564.
  
 ## Dependencies
 
