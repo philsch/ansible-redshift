@@ -1,0 +1,7 @@
+---
+
+- name: Test add and revoke group association
+  hosts: all
+  roles:
+    - prepare
+    - test_create_user_group_revoke

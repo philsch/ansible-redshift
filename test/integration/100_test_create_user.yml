@@ -1,0 +1,7 @@
+---
+
+- name: Test Create User
+  hosts: all
+  roles:
+    - prepare
+    - test_create_user

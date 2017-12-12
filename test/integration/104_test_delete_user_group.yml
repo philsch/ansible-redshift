@@ -1,0 +1,7 @@
+---
+
+- name: Test delete User and Group
+  hosts: all
+  roles:
+    - prepare
+    - test_delete_user_group

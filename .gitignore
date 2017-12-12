@@ -4,3 +4,4 @@
 
 # Ansible specific
 ansible
+*.retry

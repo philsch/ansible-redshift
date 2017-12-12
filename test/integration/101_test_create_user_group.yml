@@ -1,0 +1,7 @@
+---
+
+- name: Test Create User And Group
+  hosts: all
+  roles:
+    - prepare
+    - test_create_user_group
