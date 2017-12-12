@@ -18,7 +18,7 @@ The machine targeted by Ansible needs to have installed:
 
 ### Installation
 
-Copy the provided Python scripts into a location for Ansible libraries.
+Copy the provided Python script inside `/lib` into a location for Ansible libraries.
 
 From the Ansible documentation:
 

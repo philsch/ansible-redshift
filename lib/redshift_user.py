@@ -362,7 +362,8 @@ def main():
                     group_added = True
                 group_assign(cursor, group, user)
 
-            apply_privs(cursor, privs, user, group)
+            if len(privs) > 0:
+                apply_privs(cursor, privs, user, group)
 
         # absent case
         else:
