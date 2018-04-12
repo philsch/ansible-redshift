@@ -251,9 +251,11 @@ the library does not behave as expected, e.g. `cursor.rowcount` is not working.
 
 *Why is the result of a task always 'changed'?*
 
-The `ALTER USER` command has no effect on the `pg8000.Cursor.rowcount` value, therefore the current and actual
-user data needs to be compared in code. This feature is not implemented yet, but you can see from the other 
-returned flags what was / will be changed.
+With release 0.2, the changed flag (also in dry-run) behaves like this:
+
+* *working* if `update_password=on_create` is set, else *always true* because the module can't compare the 
+  existing and the new password
+* *always true* if `privs` are set
 
 *Contribute!*
 

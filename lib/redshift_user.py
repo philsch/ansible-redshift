@@ -98,19 +98,26 @@ def parse_and_check_privs(elements):
     return privs_dict
 
 
-def get_user_id(cursor, user):
-    """Try to get the user id of the given user"""
+def get_user(cursor, user):
+    """Try to get full pg_user_info data of the given user (note: password is masked)"""
     query_params = {'user': user}
-    query = ['SELECT usesysid FROM pg_user_info WHERE usename=\'%(user)s\' LIMIT 1']
+    query = ['SELECT * FROM pg_user_info WHERE usename=\'%(user)s\' LIMIT 1']
 
     query = ' '.join(query)
     cursor.execute(query % query_params)
     user = cursor.fetchone()
 
     if user is None:
-        raise ValueError('Internal error: couldn\'t find user to get id')
+        raise ValueError('Internal error: couldn\'t find user')
 
-    return user[0]
+    return user
+
+
+def get_user_id(cursor, user):
+    """Try to get the user id of the given user"""
+    user = get_user(cursor, user)
+
+    return user[1]
 
 
 def user_exists(cursor, user):
@@ -203,18 +210,25 @@ def group_assign(cursor, group, user):
     cursor.execute(query % query_params)
     list_of_groups = map(lambda el: el[0], cursor.fetchall())
 
+    assignment_updated = False
+    already_assigned = False
+
     for member_of_group in list_of_groups:
         if member_of_group != group:
             query_params = {'drop_group': member_of_group, 'drop_user': user}
             query = 'ALTER GROUP %(drop_group)s DROP USER %(drop_user)s'
             cursor.execute(query % query_params)
+            assignment_updated = True
+        else:
+            already_assigned = True
 
-    if group is not None and group != '':
+    if group is not None and group != '' and already_assigned is False:
         query_params = {'group': group, 'add_user': user}
         query = 'ALTER GROUP %(group)s ADD USER %(add_user)s'
         cursor.execute(query % query_params)
+        assignment_updated = True
 
-    return True
+    return assignment_updated
 
 
 def apply_privs(cursor, privs, user, group):
@@ -268,7 +282,7 @@ def apply_privs(cursor, privs, user, group):
             query = ' '.join(query)
             cursor.execute(query % query_params)
 
-    return True
+    return len(privs_map) > 0
 
 # ===========================================
 # Module execution.
@@ -356,18 +370,22 @@ def main():
                 changed = True
                 user_added = True
             else:
+                current_user_data = get_user(cursor, user)
                 if update_password == "on_create":
                     password = None
                 user_change(cursor, user, password, permission_flags, expires, conn_limit, 'ALTER')
-                changed = True
+                updated_user_data = get_user(cursor, user)
+                changed = update_password == "always" or current_user_data != updated_user_data
 
             if group != '' and not group_exists(cursor, group):
                 group_add(cursor, group)
                 changed = True
                 group_added = True
 
-            group_assign(cursor, group, user)
-            apply_privs(cursor, privs, user, group)
+            group_updated = group_assign(cursor, group, user)
+            privs_updated = apply_privs(cursor, privs, user, group)
+
+            changed = changed or group_updated or privs_updated
 
         # absent case
         else:
