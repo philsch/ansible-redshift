@@ -128,10 +128,12 @@ def user_change(cursor, user, password, flags, expires, conn_limit, type = 'CREA
         return True
 
     query_params = {'type': type, 'user': user, 'password': password, 'expires': expires, 'conn_limit': conn_limit}
-    query = ['%(type)s USER %(user)s WITH PASSWORD \'%(password)s\'']
+    query = ['%(type)s USER %(user)s']
 
-    if password is None:
+    if password is None and type == 'CREATE':
         raise ValueError('Password must not be empty when creating a user')
+    if password is not None:
+        query.append("WITH PASSWORD \'%(password)s\'")
     if expires is not None:
         query.append("VALID UNTIL %(expires)s")
     if conn_limit is not None:
@@ -283,6 +285,7 @@ def main():
             db=dict(required=True),
             user=dict(default=''),
             password=dict(default=None, no_log=True),
+            update_password=dict(default="always", choices=["always", "on_create"]),
             group=dict(default=''),
             state=dict(default="present", choices=["absent", "present"]),
             permission_flags=dict(default=[], type='list'),
@@ -295,6 +298,7 @@ def main():
 
     user = module.params["user"]
     password = module.params["password"]
+    update_password = module.params["update_password"]
     state = module.params["state"]
     db = module.params["db"]
     group = module.params["group"]
@@ -352,6 +356,8 @@ def main():
                 changed = True
                 user_added = True
             else:
+                if update_password == "on_create":
+                    password = None
                 user_change(cursor, user, password, permission_flags, expires, conn_limit, 'ALTER')
                 changed = True
 
