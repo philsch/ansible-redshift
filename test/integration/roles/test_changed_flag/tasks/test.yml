@@ -1,0 +1,92 @@
+---
+
+- name: Create Test User
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    password: "passwF0rN3wRsUser"
+    update_password: "on_create"
+  register: r_first_run
+
+- name: Expect changed flag to be true for new created user
+  fail:
+    msg: Unexpected state of changed flag
+  when: "r_first_run.changed != true"
+
+- name: Update Test User
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    password: "passwF0rN3wRsUser"
+    update_password: "on_create"
+    conn_limit: 10
+  register: r_second_run
+
+- name: Expect changed flag to be true because of changed conn_limit
+  fail:
+    msg: Unexpected state of changed flag
+  when: "r_second_run.changed != true"
+
+- name: Update Test User With Same Settings
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    password: "passwF0rN3wRsUser"
+    update_password: "on_create"
+    conn_limit: 10
+  register: r_third_run
+
+- name: Expect changed flag to be false because nothing has changed
+  fail:
+    msg: Unexpected state of changed flag
+  when: "r_third_run.changed != false"
+
+- name: Assign Test User To Group
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    group: "{{ prefix_group }}group1"
+    password: "passwF0rN3wRsUser"
+    update_password: "on_create"
+    conn_limit: 10
+  register: r_fourth_run
+
+- name: Expect changed flag to be true because group was created and assigned
+  fail:
+    msg: Unexpected state of changed flag
+  when: "r_fourth_run.changed != true"
+
+- name: Update User With Same Settings Again
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    user: "{{ prefix_user }}user1"
+    group: "{{ prefix_group }}group1"
+    password: "passwF0rN3wRsUser"
+    update_password: "on_create"
+    conn_limit: 10
+  register: r_fifth_run
+
+- name: Expect changed flag to be false because nothing was changed
+  fail:
+    msg: Unexpected state of changed flag
+  when: "r_fifth_run.changed != false"

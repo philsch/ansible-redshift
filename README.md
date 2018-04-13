@@ -85,6 +85,22 @@ From the Ansible documentation:
         - NOSUPERUSER
 ```
 
+**Update a user without the password parameter**
+
+In case you are not storing your password anywhere (e.g. in Ansible Vault), the original password might not be
+available anymore. To still be able to update other user attributes, use `update_password=on_create`.
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase 
+    user=newRsUser
+    password=any_value
+    update_password=on_create
+```
+
 **Create a group**
 
 ```
@@ -235,9 +251,11 @@ the library does not behave as expected, e.g. `cursor.rowcount` is not working.
 
 *Why is the result of a task always 'changed'?*
 
-I haven't found a way so far to check if the password of a user has actually changed or not. So even if no
-input parameter has changed, the module still sends an `ALTER` command to Redshift. But you can see from the
-other returned flags what was / will be changed.
+With release 0.2, the changed flag (also in dry-run) behaves like this:
+
+* *working* if `update_password=on_create` is set, else *always true* because the module can't compare the 
+  existing and the new password
+* *always true* if `privs` are set
 
 *Contribute!*
 
