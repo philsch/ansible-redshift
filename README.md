@@ -198,7 +198,8 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     password=passwF0rN3wRsUser
     privs:
         - rsSchemaA:USAGE/ALL:ALL
-        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
+        - rsSchemaB:USAGE/ALL:SELECT,INSERT # USAGE on schema and SELECT,INSERT on all tables of this schema
+        - rsSchemaC:USAGE/TableA:SELECT,INSERT/TableB:ALL # USAGE on schema and SELECT,INSERT on specific tables only
     state=present
 ```
 
