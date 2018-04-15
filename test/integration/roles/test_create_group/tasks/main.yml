@@ -1,0 +1,4 @@
+---
+
+- include: execute.yml
+- include: validate.yml
