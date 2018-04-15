@@ -365,24 +365,28 @@ def main():
     #
     try:
         if state == "present":
-            if not user_exists(cursor, user):
-                user_change(cursor, user, password, permission_flags, expires, conn_limit)
-                changed = True
-                user_added = True
-            else:
-                current_user_data = get_user(cursor, user)
-                if update_password == "on_create":
-                    password = None
-                user_change(cursor, user, password, permission_flags, expires, conn_limit, 'ALTER')
-                updated_user_data = get_user(cursor, user)
-                changed = update_password == "always" or current_user_data != updated_user_data
+            if user is not None and user != '':
+                if not user_exists(cursor, user):
+                    user_change(cursor, user, password, permission_flags, expires, conn_limit)
+                    changed = True
+                    user_added = True
+                else:
+                    current_user_data = get_user(cursor, user)
+                    if update_password == "on_create":
+                        password = None
+                    user_change(cursor, user, password, permission_flags, expires, conn_limit, 'ALTER')
+                    updated_user_data = get_user(cursor, user)
+                    changed = update_password == "always" or current_user_data != updated_user_data
 
             if group != '' and not group_exists(cursor, group):
                 group_add(cursor, group)
                 changed = True
                 group_added = True
 
-            group_updated = group_assign(cursor, group, user)
+            group_updated = False
+            if user is not None and user != '':
+                group_updated = group_assign(cursor, group, user)
+
             privs_updated = apply_privs(cursor, privs, user, group)
 
             changed = changed or group_updated or privs_updated

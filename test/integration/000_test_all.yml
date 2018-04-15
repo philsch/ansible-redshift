@@ -10,6 +10,7 @@
 - include: 104_test_delete_user_group.yml
 - include: 105_test_update_user_without_password.yml
 - include: 106_test_changed_flag.yml
+- include: 107_test_create_group.yml
 
 - name: Final cleanup
   hosts: all
