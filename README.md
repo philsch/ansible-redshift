@@ -218,7 +218,7 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     state=present
 ```
 
-*Note* Create the group with privileges in a separate statement! If you set `user`, `group` and `privs` at the same time
+*Note* Always use a extra statement for groups. If you set `user`, `group` and `privs` at the same time
 the privileges will be applied to the user. This setup allows you to assign the user to a group and give special 
 user-privileges at the same time like in the following example_
 
