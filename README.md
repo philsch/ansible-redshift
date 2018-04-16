@@ -205,10 +205,6 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
 
 **Grant rights for a group**
 
-*Note* Create the group with privileges in a separate statement! If you set `user`, `group` and `privs` at the same time
-the privileges will be applied to the user. This setup allows you to assign the user to a group and give special 
-user-privileges at the same time.
-
 ```
 - redshift_user:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
@@ -220,6 +216,36 @@ user-privileges at the same time.
         - rsSchemaA:USAGE/ALL:ALL
         - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
     state=present
+```
+
+*Note* Create the group with privileges in a separate statement! If you set `user`, `group` and `privs` at the same time
+the privileges will be applied to the user. This setup allows you to assign the user to a group and give special 
+user-privileges at the same time like in the following example_
+
+```
+# This statement creates the group with priveleges
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    group=rsGroup
+    privs:
+        - rsSchemaA:USAGE/ALL:ALL
+        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
+    state=present
+
+# This statement creates a user, assin to the group and gives this user additionally access to rsSchemaC
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    user=newRsUser
+    group=rsGroup
+    privs:
+        - rsSchemaC:USAGE/ALL:ALL
+    state=present    
 ```
 
 **Revoke rights**
