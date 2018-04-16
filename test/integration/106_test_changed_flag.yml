@@ -1,0 +1,7 @@
+---
+
+- name: Test Changed Flag
+  hosts: all
+  roles:
+    - prepare
+    - test_changed_flag

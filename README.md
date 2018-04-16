@@ -85,6 +85,22 @@ From the Ansible documentation:
         - NOSUPERUSER
 ```
 
+**Update a user without the password parameter**
+
+In case you are not storing your password anywhere (e.g. in Ansible Vault), the original password might not be
+available anymore. To still be able to update other user attributes, use `update_password=on_create`.
+
+```
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase 
+    user=newRsUser
+    password=any_value
+    update_password=on_create
+```
+
 **Create a group**
 
 ```
@@ -182,7 +198,8 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     password=passwF0rN3wRsUser
     privs:
         - rsSchemaA:USAGE/ALL:ALL
-        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
+        - rsSchemaB:USAGE/ALL:SELECT,INSERT # USAGE on schema and SELECT,INSERT on all tables of this schema
+        - rsSchemaC:USAGE/TableA:SELECT,INSERT/TableB:ALL # USAGE on schema and SELECT,INSERT on specific tables only
     state=present
 ```
 
@@ -199,6 +216,36 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
         - rsSchemaA:USAGE/ALL:ALL
         - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
     state=present
+```
+
+*Note* Always use a extra statement for groups. If you set `user`, `group` and `privs` at the same time
+the privileges will be applied to the user. This setup allows you to assign the user to a group and give special 
+user-privileges at the same time like in the following example:
+
+```
+# This statement creates the group with priveleges
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    group=rsGroup
+    privs:
+        - rsSchemaA:USAGE/ALL:ALL
+        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
+    state=present
+
+# This statement creates a user, assign to the group and gives this user additionally access to rsSchemaC
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    user=newRsUser
+    group=rsGroup
+    privs:
+        - rsSchemaC:USAGE/ALL:ALL
+    state=present    
 ```
 
 **Revoke rights**
@@ -235,9 +282,11 @@ the library does not behave as expected, e.g. `cursor.rowcount` is not working.
 
 *Why is the result of a task always 'changed'?*
 
-I haven't found a way so far to check if the password of a user has actually changed or not. So even if no
-input parameter has changed, the module still sends an `ALTER` command to Redshift. But you can see from the
-other returned flags what was / will be changed.
+With release 0.2, the changed flag (also in dry-run) behaves like this:
+
+* *working* if `update_password=on_create` is set, else *always true* because the module can't compare the 
+  existing and the new password
+* *always true* if `privs` are set
 
 *Contribute!*
 

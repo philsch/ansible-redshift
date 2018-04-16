@@ -19,17 +19,12 @@
 
 ANSIBLE_METADATA = {'status': ['preview'],
                     'supported_by': 'community',
-                    'version': '0.1'}
+                    'version': '0.2.0'}
 
 DOCUMENTATION = '''
 ---
 module: redshift_user
 short_description: Adds or removes a users (groups) from a AWS Redshift database.
-'''
-
-EXAMPLES = '''
-TODO EXAMPLES
-
 '''
 
 try:
@@ -98,19 +93,26 @@ def parse_and_check_privs(elements):
     return privs_dict
 
 
-def get_user_id(cursor, user):
-    """Try to get the user id of the given user"""
+def get_user(cursor, user):
+    """Try to get full pg_user_info data of the given user (note: password is masked)"""
     query_params = {'user': user}
-    query = ['SELECT usesysid FROM pg_user_info WHERE usename=\'%(user)s\' LIMIT 1']
+    query = ['SELECT * FROM pg_user_info WHERE usename=\'%(user)s\' LIMIT 1']
 
     query = ' '.join(query)
     cursor.execute(query % query_params)
     user = cursor.fetchone()
 
     if user is None:
-        raise ValueError('Internal error: couldn\'t find user to get id')
+        raise ValueError('Internal error: couldn\'t find user')
 
-    return user[0]
+    return user
+
+
+def get_user_id(cursor, user):
+    """Try to get the user id of the given user"""
+    user = get_user(cursor, user)
+
+    return user[1]
 
 
 def user_exists(cursor, user):
@@ -128,10 +130,12 @@ def user_change(cursor, user, password, flags, expires, conn_limit, type = 'CREA
         return True
 
     query_params = {'type': type, 'user': user, 'password': password, 'expires': expires, 'conn_limit': conn_limit}
-    query = ['%(type)s USER %(user)s WITH PASSWORD \'%(password)s\'']
+    query = ['%(type)s USER %(user)s']
 
-    if password is None:
+    if password is None and type == 'CREATE':
         raise ValueError('Password must not be empty when creating a user')
+    if password is not None:
+        query.append("WITH PASSWORD \'%(password)s\'")
     if expires is not None:
         query.append("VALID UNTIL %(expires)s")
     if conn_limit is not None:
@@ -201,32 +205,36 @@ def group_assign(cursor, group, user):
     cursor.execute(query % query_params)
     list_of_groups = map(lambda el: el[0], cursor.fetchall())
 
+    assignment_updated = False
+    already_assigned = False
+
     for member_of_group in list_of_groups:
         if member_of_group != group:
             query_params = {'drop_group': member_of_group, 'drop_user': user}
             query = 'ALTER GROUP %(drop_group)s DROP USER %(drop_user)s'
             cursor.execute(query % query_params)
+            assignment_updated = True
+        else:
+            already_assigned = True
 
-    if group is not None and group != '':
+    if group is not None and group != '' and already_assigned is False:
         query_params = {'group': group, 'add_user': user}
         query = 'ALTER GROUP %(group)s ADD USER %(add_user)s'
         cursor.execute(query % query_params)
+        assignment_updated = True
 
-    return True
+    return assignment_updated
 
 
 def apply_privs(cursor, privs, user, group):
-    """Set permissions for schema"""
-    if user != '' and group != '' and len(privs) > 0:
-        raise ValueError('Privileges can not be set for user and group at the same time')
-
+    """Set permissions for schema, if user and group is set the privs are applied to the user only"""
     privs_map = parse_and_check_privs(privs)
     for (schema, schema_dict) in iteritems(privs_map):
         query_params = {'group': group, 'user': user, 'schema': schema}
         query = ['REVOKE ALL ON SCHEMA %(schema)s ']
         if user != '':
             query.append('FROM %(user)s')
-        if group != '':
+        if group != '' and user == '':
             query.append('FROM GROUP %(group)s')
         query = ' '.join(query)
         cursor.execute(query % query_params)
@@ -234,7 +242,7 @@ def apply_privs(cursor, privs, user, group):
         query = ['REVOKE ALL ON ALL TABLES IN SCHEMA %(schema)s ']
         if user != '':
             query.append('FROM %(user)s')
-        if group != '':
+        if group != '' and user == '':
             query.append('FROM GROUP %(group)s')
         query = ' '.join(query)
         cursor.execute(query % query_params)
@@ -246,7 +254,7 @@ def apply_privs(cursor, privs, user, group):
         query = ['GRANT %(privs)s ON SCHEMA %(schema)s ']
         if user != '':
             query.append('TO %(user)s')
-        if group != '':
+        if group != '' and user == '':
             query.append('TO GROUP %(group)s')
         query = ' '.join(query)
         cursor.execute(query % query_params)
@@ -260,13 +268,13 @@ def apply_privs(cursor, privs, user, group):
                 query.append('ON TABLE %(schema)s.%(table)s')
             if user != '':
                 query.append('TO %(user)s')
-            if group != '':
+            if group != '' and user == '':
                 query.append('TO GROUP %(group)s')
 
             query = ' '.join(query)
             cursor.execute(query % query_params)
 
-    return True
+    return len(privs_map) > 0
 
 # ===========================================
 # Module execution.
@@ -283,6 +291,7 @@ def main():
             db=dict(required=True),
             user=dict(default=''),
             password=dict(default=None, no_log=True),
+            update_password=dict(default="always", choices=["always", "on_create"]),
             group=dict(default=''),
             state=dict(default="present", choices=["absent", "present"]),
             permission_flags=dict(default=[], type='list'),
@@ -295,6 +304,7 @@ def main():
 
     user = module.params["user"]
     password = module.params["password"]
+    update_password = module.params["update_password"]
     state = module.params["state"]
     db = module.params["db"]
     group = module.params["group"]
@@ -347,21 +357,31 @@ def main():
     #
     try:
         if state == "present":
-            if not user_exists(cursor, user):
-                user_change(cursor, user, password, permission_flags, expires, conn_limit)
-                changed = True
-                user_added = True
-            else:
-                user_change(cursor, user, password, permission_flags, expires, conn_limit, 'ALTER')
-                changed = True
+            if user != '':
+                if not user_exists(cursor, user):
+                    user_change(cursor, user, password, permission_flags, expires, conn_limit)
+                    changed = True
+                    user_added = True
+                else:
+                    current_user_data = get_user(cursor, user)
+                    if update_password == "on_create":
+                        password = None
+                    user_change(cursor, user, password, permission_flags, expires, conn_limit, 'ALTER')
+                    updated_user_data = get_user(cursor, user)
+                    changed = update_password == "always" or current_user_data != updated_user_data
 
             if group != '' and not group_exists(cursor, group):
                 group_add(cursor, group)
                 changed = True
                 group_added = True
 
-            group_assign(cursor, group, user)
-            apply_privs(cursor, privs, user, group)
+            group_updated = False
+            if user != '':
+                group_updated = group_assign(cursor, group, user)
+
+            privs_updated = apply_privs(cursor, privs, user, group)
+
+            changed = changed or group_updated or privs_updated
 
         # absent case
         else:

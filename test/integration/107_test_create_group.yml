@@ -1,0 +1,7 @@
+---
+
+- name: Test Create Group (without user at same time)
+  hosts: all
+  roles:
+    - prepare
+    - test_create_group
