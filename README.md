@@ -235,7 +235,7 @@ user-privileges at the same time like in the following example:
         - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
     state=present
 
-# This statement creates a user, assin to the group and gives this user additionally access to rsSchemaC
+# This statement creates a user, assign to the group and gives this user additionally access to rsSchemaC
 - redshift_user:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
