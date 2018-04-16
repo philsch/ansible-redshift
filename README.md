@@ -218,6 +218,36 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     state=present
 ```
 
+*Note* Always use a extra statement for groups. If you set `user`, `group` and `privs` at the same time
+the privileges will be applied to the user. This setup allows you to assign the user to a group and give special 
+user-privileges at the same time like in the following example:
+
+```
+# This statement creates the group with priveleges
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    group=rsGroup
+    privs:
+        - rsSchemaA:USAGE/ALL:ALL
+        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
+    state=present
+
+# This statement creates a user, assign to the group and gives this user additionally access to rsSchemaC
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=myDatabase
+    user=newRsUser
+    group=rsGroup
+    privs:
+        - rsSchemaC:USAGE/ALL:ALL
+    state=present    
+```
+
 **Revoke rights**
 
 **Note** In this current module version you have to call all schemas you gave rights like this.
