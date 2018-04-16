@@ -27,11 +27,6 @@ module: redshift_user
 short_description: Adds or removes a users (groups) from a AWS Redshift database.
 '''
 
-EXAMPLES = '''
-TODO EXAMPLES
-
-'''
-
 try:
     import pg8000
     from pg8000 import DatabaseError
@@ -232,17 +227,14 @@ def group_assign(cursor, group, user):
 
 
 def apply_privs(cursor, privs, user, group):
-    """Set permissions for schema"""
-    if user != '' and group != '' and len(privs) > 0:
-        raise ValueError('Privileges can not be set for user and group at the same time')
-
+    """Set permissions for schema, if user and group is set the privs are applied to the user only"""
     privs_map = parse_and_check_privs(privs)
     for (schema, schema_dict) in iteritems(privs_map):
         query_params = {'group': group, 'user': user, 'schema': schema}
         query = ['REVOKE ALL ON SCHEMA %(schema)s ']
         if user != '':
             query.append('FROM %(user)s')
-        if group != '':
+        if group != '' and user == '':
             query.append('FROM GROUP %(group)s')
         query = ' '.join(query)
         cursor.execute(query % query_params)
@@ -250,7 +242,7 @@ def apply_privs(cursor, privs, user, group):
         query = ['REVOKE ALL ON ALL TABLES IN SCHEMA %(schema)s ']
         if user != '':
             query.append('FROM %(user)s')
-        if group != '':
+        if group != '' and user == '':
             query.append('FROM GROUP %(group)s')
         query = ' '.join(query)
         cursor.execute(query % query_params)
@@ -262,7 +254,7 @@ def apply_privs(cursor, privs, user, group):
         query = ['GRANT %(privs)s ON SCHEMA %(schema)s ']
         if user != '':
             query.append('TO %(user)s')
-        if group != '':
+        if group != '' and user == '':
             query.append('TO GROUP %(group)s')
         query = ' '.join(query)
         cursor.execute(query % query_params)
@@ -276,7 +268,7 @@ def apply_privs(cursor, privs, user, group):
                 query.append('ON TABLE %(schema)s.%(table)s')
             if user != '':
                 query.append('TO %(user)s')
-            if group != '':
+            if group != '' and user == '':
                 query.append('TO GROUP %(group)s')
 
             query = ' '.join(query)
@@ -365,7 +357,7 @@ def main():
     #
     try:
         if state == "present":
-            if user is not None and user != '':
+            if user != '':
                 if not user_exists(cursor, user):
                     user_change(cursor, user, password, permission_flags, expires, conn_limit)
                     changed = True
@@ -384,7 +376,7 @@ def main():
                 group_added = True
 
             group_updated = False
-            if user is not None and user != '':
+            if user != '':
                 group_updated = group_assign(cursor, group, user)
 
             privs_updated = apply_privs(cursor, privs, user, group)
