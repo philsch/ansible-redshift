@@ -19,7 +19,7 @@
 
 ANSIBLE_METADATA = {'status': ['preview'],
                     'supported_by': 'community',
-                    'version': '0.2.0'}
+                    'version': '0.3.0'}
 
 DOCUMENTATION = '''
 ---
@@ -370,7 +370,7 @@ def main():
                     updated_user_data = get_user(cursor, user)
                     changed = update_password == "always" or current_user_data != updated_user_data
 
-            if group != '' and not group_exists(cursor, group):
+            if user == '' and group != '' and not group_exists(cursor, group):
                 group_add(cursor, group)
                 changed = True
                 group_added = True
@@ -391,7 +391,7 @@ def main():
                 changed = True
                 user_removed = True
 
-            if group != '' and group_exists(cursor, group):
+            if user == '' and group != '' and group_exists(cursor, group):
                 group_delete(cursor, group)
                 changed = True
                 group_removed = True

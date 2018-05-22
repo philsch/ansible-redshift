@@ -1,6 +1,15 @@
 ---
 
-- name: Create Testuser And Group
+- name: Create Testgroup
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    group: "{{ prefix_group }}group1"
+
+- name: Create Testuser and assign to group
   redshift_user:
     login_host: "{{ redshift_host }}"
     login_user: "{{ redshift_user }}"

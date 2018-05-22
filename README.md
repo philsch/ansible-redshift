@@ -48,8 +48,8 @@ From the Ansible documentation:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase 
-    user=newRsUser
+    db=my_database 
+    user=new_rs_user
     password=passwF0rN3wRsUser
     expires='2017-01-01 00:00'
     conn_limit=10
@@ -64,8 +64,8 @@ From the Ansible documentation:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase 
-    user=newRsUser
+    db=my_database 
+    user=new_rs_user
     password=passwF0rN3wRsUser 
     permission_flags:
         - SUPERUSER
@@ -78,8 +78,8 @@ From the Ansible documentation:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase 
-    user=newRsUser
+    db=my_database 
+    user=new_rs_user
     password=passwF0rN3wRsUser 
     permission_flags:
         - NOSUPERUSER
@@ -95,8 +95,8 @@ available anymore. To still be able to update other user attributes, use `update
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase 
-    user=newRsUser
+    db=my_database 
+    user=new_rs_user
     password=any_value
     update_password=on_create
 ```
@@ -108,27 +108,26 @@ available anymore. To still be able to update other user attributes, use `update
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase 
-    group=newRsGroup
+    db=my_database 
+    group=new_rs_group
 ```
 
 **Assign an user to groups**
 
-*Note* This statement will create user and group (if not already existing) and assign the user to that group.
+*Note* Since version `0.3.0` a group MUST exist before you can assign users to it
 
-*Note* If a user is part of other groups, the user will be removed from all groups which are not specified.
-
-**Note** This module currently does *only* support a 1:1 relationship of user and group!
+*Note* If a user is part of other groups, the user will be removed from all groups which are not specified. This means
+also the module only supports n:1 relationships of users and groups!
 
 ```
 - redshift_user:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase
-    user=newRsUser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
-    group=newRsGroup
+    group=new_rs_group
 ```
 
 **Remove a user from all groups**
@@ -138,8 +137,8 @@ available anymore. To still be able to update other user attributes, use `update
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase
-    user=newRsUser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
     # no group given 
     # state is implicit 'present' ('absent' would try to delete the user)
@@ -151,14 +150,23 @@ available anymore. To still be able to update other user attributes, use `update
 This is something you have to do manually at the moment!
 
 ```
+# remove user
 - redshift_user:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase
-    user=newRsUser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
-    group=newRsGroup
+    state=absent
+
+# remove group    
+- redshift_user:
+    login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
+    login_user=rs_master 
+    login_password=123456Abcdef 
+    db=my_database
+    group=new_rs_group
     state=absent
 ```
 
@@ -178,11 +186,11 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase
-    user=newRsUser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
     privs:
-        - rsSchemaA:USAGE/ALL:ALL
+        - rs_schema_a:USAGE/ALL:ALL
     state=present
 ```
 
@@ -193,13 +201,13 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase
-    user=newRsUser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
     privs:
-        - rsSchemaA:USAGE/ALL:ALL
-        - rsSchemaB:USAGE/ALL:SELECT,INSERT # USAGE on schema and SELECT,INSERT on all tables of this schema
-        - rsSchemaC:USAGE/TableA:SELECT,INSERT/TableB:ALL # USAGE on schema and SELECT,INSERT on specific tables only
+        - rs_schema_a:USAGE/ALL:ALL
+        - rs_schema_b:USAGE/ALL:SELECT,INSERT # USAGE on schema and SELECT,INSERT on all tables of this schema
+        - rs_schema_c:USAGE/table_a:SELECT,INSERT/table_b:ALL # USAGE on schema and SELECT,INSERT on specific tables only
     state=present
 ```
 
@@ -210,11 +218,11 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase
-    group=rsGroup
+    db=my_database
+    group=rs_group
     privs:
-        - rsSchemaA:USAGE/ALL:ALL
-        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
+        - rs_schema_a:USAGE/ALL:ALL
+        - rs_schema_b:USAGE/table_a:SELECT,INSERT/table_b:ALL
     state=present
 ```
 
@@ -228,23 +236,23 @@ user-privileges at the same time like in the following example:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase
-    group=rsGroup
+    db=my_database
+    group=rs_group
     privs:
-        - rsSchemaA:USAGE/ALL:ALL
-        - rsSchemaB:USAGE/TableA:SELECT,INSERT/TableB:ALL
+        - rs_schema_a:USAGE/ALL:ALL
+        - rs_schema_b:USAGE/table_a:SELECT,INSERT/table_b:ALL
     state=present
 
-# This statement creates a user, assign to the group and gives this user additionally access to rsSchemaC
+# This statement creates a user, assign to the group and gives this user additionally access to rs_schema_c
 - redshift_user:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase
-    user=newRsUser
-    group=rsGroup
+    db=my_database
+    user=new_rs_user
+    group=rs_group
     privs:
-        - rsSchemaC:USAGE/ALL:ALL
+        - rs_schema_c:USAGE/ALL:ALL
     state=present    
 ```
 
@@ -257,11 +265,11 @@ user-privileges at the same time like in the following example:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=myDatabase
-    group=rsGroup
+    db=my_database
+    group=rs_group
     privs:
-        - rsSchemaA #will remove all privileges from rsSchemaA and its tables
-        - rsSchemaB #will remove all privileges from rsSchemaB and its tables
+        - rs_schema_a #will remove all privileges from rs_schema_a and its tables
+        - rs_schema_b #will remove all privileges from rs_schema_b and its tables
 ```
 
 **Set rights on database level**
@@ -270,17 +278,17 @@ Not supported in this module version (yet)
  
 ## Developers FAQ
 
-*Why isn't this module using psycopg2 ?*
+**Why isn't this module using psycopg2 ?**
 
 The python psycopg2 package has `gcc` and `*-devel` as a dependency on machines based on the AWS Linux image. To
 not have this dependency, a python library without external dependencies was used.
 
-*Redshift vs PostgreSQL*
+**Redshift vs PostgreSQL**
 
 Redshift is not PostgreSQL, however we use a psql library for this module. This does the job, but at some points
 the library does not behave as expected, e.g. `cursor.rowcount` is not working.
 
-*Why is the result of a task always 'changed'?*
+**Why is the result of a task always 'changed'?**
 
 With release 0.2, the changed flag (also in dry-run) behaves like this:
 
@@ -288,6 +296,14 @@ With release 0.2, the changed flag (also in dry-run) behaves like this:
   existing and the new password
 * *always true* if `privs` are set
 
-*Contribute!*
+**When using camelCase user or group names the module throws exceptions**
+
+NOTE: According to https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
+
+> Identifiers must consist of only UTF-8 printable characters. ASCII letters in standard and delimited identifiers are case-insensitive and are folded to lowercase in the database.
+
+So I would strongly recommend you to stick to lowercase identifiers unless you love to track down difficult to debug issues.
+
+## Contribute!
 
 This module is in an early state. Feel free to contribute with bug reports or feature requests.
