@@ -42,20 +42,14 @@ From the Ansible documentation:
 
 ### Redshift Users / Groups
 
-NOTE: According to https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
-
-> Identifiers must consist of only UTF-8 printable characters. ASCII letters in standard and delimited identifiers are case-insensitive and are folded to lowercase in the database.
-
-So I would strongly recommend you to stick to lowercase identifiers unless you love to track down difficult to debug issues.
-
 **Create a normal user**
 ```
 - redshift_user:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase 
-    user=newrsuser
+    db=my_database 
+    user=new_rs_user
     password=passwF0rN3wRsUser
     expires='2017-01-01 00:00'
     conn_limit=10
@@ -70,8 +64,8 @@ So I would strongly recommend you to stick to lowercase identifiers unless you l
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase 
-    user=newrsuser
+    db=my_database 
+    user=new_rs_user
     password=passwF0rN3wRsUser 
     permission_flags:
         - SUPERUSER
@@ -84,8 +78,8 @@ So I would strongly recommend you to stick to lowercase identifiers unless you l
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase 
-    user=newrsuser
+    db=my_database 
+    user=new_rs_user
     password=passwF0rN3wRsUser 
     permission_flags:
         - NOSUPERUSER
@@ -101,8 +95,8 @@ available anymore. To still be able to update other user attributes, use `update
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase 
-    user=newrsuser
+    db=my_database 
+    user=new_rs_user
     password=any_value
     update_password=on_create
 ```
@@ -114,8 +108,8 @@ available anymore. To still be able to update other user attributes, use `update
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase 
-    group=newrsgroup
+    db=my_database 
+    group=new_rs_group
 ```
 
 **Assign an user to groups**
@@ -131,10 +125,10 @@ available anymore. To still be able to update other user attributes, use `update
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase
-    user=newrsuser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
-    group=newrsgroup
+    group=new_rs_group
 ```
 
 **Remove a user from all groups**
@@ -144,8 +138,8 @@ available anymore. To still be able to update other user attributes, use `update
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase
-    user=newrsuser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
     # no group given 
     # state is implicit 'present' ('absent' would try to delete the user)
@@ -161,10 +155,10 @@ This is something you have to do manually at the moment!
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase
-    user=newrsuser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
-    group=newrsgroup
+    group=new_rs_group
     state=absent
 ```
 
@@ -184,11 +178,11 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase
-    user=newrsuser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
     privs:
-        - rsschemaa:USAGE/ALL:ALL
+        - rs_schema_a:USAGE/ALL:ALL
     state=present
 ```
 
@@ -199,13 +193,13 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase
-    user=newrsuser
+    db=my_database
+    user=new_rs_user
     password=passwF0rN3wRsUser
     privs:
-        - rsschemaa:USAGE/ALL:ALL
-        - rsschemab:USAGE/ALL:SELECT,INSERT # USAGE on schema and SELECT,INSERT on all tables of this schema
-        - rsschemac:USAGE/tablea:SELECT,INSERT/tableb:ALL # USAGE on schema and SELECT,INSERT on specific tables only
+        - rs_schema_a:USAGE/ALL:ALL
+        - rs_schema_b:USAGE/ALL:SELECT,INSERT # USAGE on schema and SELECT,INSERT on all tables of this schema
+        - rs_schema_c:USAGE/table_a:SELECT,INSERT/table_b:ALL # USAGE on schema and SELECT,INSERT on specific tables only
     state=present
 ```
 
@@ -216,11 +210,11 @@ http://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase
-    group=rsgroup
+    db=my_database
+    group=rs_group
     privs:
-        - rsschemaa:USAGE/ALL:ALL
-        - rsschemab:USAGE/tablea:SELECT,INSERT/tableb:ALL
+        - rs_schema_a:USAGE/ALL:ALL
+        - rs_schema_b:USAGE/table_a:SELECT,INSERT/table_b:ALL
     state=present
 ```
 
@@ -234,24 +228,24 @@ user-privileges at the same time like in the following example:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase
-    group=rsgroup
+    db=my_database
+    group=rs_group
     privs:
-        - rsschemaa:USAGE/ALL:ALL
-        - rsschemab:USAGE/tablea:SELECT,INSERT/tableb:ALL
+        - rs_schema_a:USAGE/ALL:ALL
+        - rs_schema_b:USAGE/table_a:SELECT,INSERT/table_b:ALL
     state=present
 
-# This statement creates a user, assign to the group and gives this user additionally access to rsSchemaC
+# This statement creates a user, assign to the group and gives this user additionally access to rs_schema_c
 - redshift_user:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase
-    user=newrsuser
-    group=rsgroup
+    db=my_database
+    user=new_rs_user
+    group=rs_group
     privs:
-        - rsschemac:USAGE/ALL:ALL
-    state=present
+        - rs_schema_c:USAGE/ALL:ALL
+    state=present    
 ```
 
 **Revoke rights**
@@ -263,11 +257,11 @@ user-privileges at the same time like in the following example:
     login_host=some-redshift.cluster.eu-central-1.redshift.amazonaws.com 
     login_user=rs_master 
     login_password=123456Abcdef 
-    db=mydatabase
-    group=rsgroup
+    db=my_database
+    group=rs_group
     privs:
-        - rsschemaa #will remove all privileges from rsschemaa and its tables
-        - rsschemab #will remove all privileges from rsschemab and its tables
+        - rs_schema_a #will remove all privileges from rs_schema_a and its tables
+        - rs_schema_b #will remove all privileges from rs_schema_b and its tables
 ```
 
 **Set rights on database level**
@@ -293,6 +287,12 @@ With release 0.2, the changed flag (also in dry-run) behaves like this:
 * *working* if `update_password=on_create` is set, else *always true* because the module can't compare the 
   existing and the new password
 * *always true* if `privs` are set
+
+NOTE: According to https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
+
+> Identifiers must consist of only UTF-8 printable characters. ASCII letters in standard and delimited identifiers are case-insensitive and are folded to lowercase in the database.
+
+So I would strongly recommend you to stick to lowercase identifiers unless you love to track down difficult to debug issues.
 
 *Contribute!*
 
