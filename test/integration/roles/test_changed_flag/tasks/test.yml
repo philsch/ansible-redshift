@@ -53,6 +53,36 @@
     msg: Unexpected state of changed flag
   when: "r_third_run.changed != false"
 
+- name: Create Testgroup
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    group: "{{ prefix_group }}group1"
+  register: r_fourth_run
+
+- name: Expect changed flag to be true because of created group
+  fail:
+    msg: Unexpected state of changed flag
+  when: "r_fourth_run.changed != true"
+
+- name: Run Create Testgroup again
+  redshift_user:
+    login_host: "{{ redshift_host }}"
+    login_user: "{{ redshift_user }}"
+    login_password: "{{ redshift_password }}"
+    port: "{{ redshift_port }}"
+    db: "{{ redshift_db }}"
+    group: "{{ prefix_group }}group1"
+  register: r_fifth_run
+
+- name: Expect changed flag to be false because nothing has changed
+  fail:
+    msg: Unexpected state of changed flag
+  when: "r_fifth_run.changed != false"
+
 - name: Assign Test User To Group
   redshift_user:
     login_host: "{{ redshift_host }}"
@@ -65,12 +95,12 @@
     password: "passwF0rN3wRsUser"
     update_password: "on_create"
     conn_limit: 10
-  register: r_fourth_run
+  register: r_sixth_run
 
-- name: Expect changed flag to be true because group was created and assigned
+- name: Expect changed flag to be true because group was assigned
   fail:
     msg: Unexpected state of changed flag
-  when: "r_fourth_run.changed != true"
+  when: "r_sixth_run.changed != true"
 
 - name: Update User With Same Settings Again
   redshift_user:
@@ -84,9 +114,9 @@
     password: "passwF0rN3wRsUser"
     update_password: "on_create"
     conn_limit: 10
-  register: r_fifth_run
+  register: r_seventh_run
 
 - name: Expect changed flag to be false because nothing was changed
   fail:
     msg: Unexpected state of changed flag
-  when: "r_fifth_run.changed != false"
+  when: "r_seventh_run.changed != false"
