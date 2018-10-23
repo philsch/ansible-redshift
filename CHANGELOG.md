@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.1]
+### Added
+- Parameter `login_ssl` to enable/disable SSL support (default: True)
+
+### Changed
+- Use a SSL connection by default (#16)
+
 ## [0.3.0]
 ### Changed
 - Groups have to be created / deleted explicitly from now on by using the module without `user` property.
