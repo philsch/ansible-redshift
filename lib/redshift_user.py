@@ -287,6 +287,7 @@ def main():
             login_password=dict(default="", no_log=True),
             login_host=dict(default=""),
             login_unix_socket=dict(default=""),
+            login_ssl=dict(default=True, type='bool'),
             port=dict(default=5439, type='int'),
             db=dict(required=True),
             user=dict(default=''),
@@ -324,6 +325,7 @@ def main():
         "login_host": "host",
         "login_user": "user",
         "login_password": "password",
+        "login_ssl": "ssl",
         "port": "port",
         "db": "database"
     }
@@ -341,6 +343,9 @@ def main():
         db_connection = pg8000.connect(**kw)
         db_connection.autocommit = False
         cursor = db_connection.cursor()
+    except InterfaceError:
+        e = get_exception()
+        module.fail_json(msg="unable to connect to database, check credentials and SSL flag!: %s " % e)
     except Exception:
         e = get_exception()
         module.fail_json(msg="unable to connect to database: %s" % e)
