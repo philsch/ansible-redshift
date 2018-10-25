@@ -191,11 +191,8 @@ def group_delete(cursor, group):
     cursor.execute(query % query_params)
     return True
 
-
-def group_assign(cursor, group, user):
-    """Adds user to the group and removes the user from not mentioned groups"""
-    #TODO: support multiple groups
-
+def group_assign(cursor, groups, user):
+    """Adds user to the groups and removes the user from not mentioned groups"""
     user_id = get_user_id(cursor, user)
 
     query_params = {'uid': user_id}
@@ -208,23 +205,22 @@ def group_assign(cursor, group, user):
     assignment_updated = False
     already_assigned = False
 
-    for member_of_group in list_of_groups:
-        if member_of_group != group:
-            query_params = {'drop_group': member_of_group, 'drop_user': user}
-            query = 'ALTER GROUP %(drop_group)s DROP USER %(drop_user)s'
+    current_group_list=list(list_of_groups);
+    for group in groups:
+        for member_of_group in list_of_groups:
+            if member_of_group not in groups:
+                query_params = {'drop_group': member_of_group, 'drop_user': user}
+                query = 'ALTER GROUP %(drop_group)s DROP USER %(drop_user)s'
+                cursor.execute(query % query_params)
+                assignment_updated = True
+
+        if group is not None and group != '' and group not in current_group_list:
+            query_params = {'group': group, 'add_user': user}
+            query = 'ALTER GROUP %(group)s ADD USER %(add_user)s'
             cursor.execute(query % query_params)
             assignment_updated = True
-        else:
-            already_assigned = True
-
-    if group is not None and group != '' and already_assigned is False:
-        query_params = {'group': group, 'add_user': user}
-        query = 'ALTER GROUP %(group)s ADD USER %(add_user)s'
-        cursor.execute(query % query_params)
-        assignment_updated = True
 
     return assignment_updated
-
 
 def apply_privs(cursor, privs, user, group):
     """Set permissions for schema, if user and group is set the privs are applied to the user only"""
@@ -293,7 +289,7 @@ def main():
             user=dict(default=''),
             password=dict(default=None, no_log=True),
             update_password=dict(default="always", choices=["always", "on_create"]),
-            group=dict(default=''),
+            group=dict(default='',type='list'),
             state=dict(default="present", choices=["absent", "present"]),
             permission_flags=dict(default=[], type='list'),
             privs=dict(default=[], type='list'),
