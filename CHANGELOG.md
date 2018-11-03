@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.2]
+### Changed
+- Fix: `expires` parameter causes parser error (#20)
+
 ## [0.3.1]
 ### Added
 - Parameter `login_ssl` to enable/disable SSL support (default: True)
