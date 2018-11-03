@@ -9,4 +9,5 @@
     db: "{{ redshift_db }}"
     user: "{{ prefix_user }}user1"
     password: "passwF0rN3wRsUser"
-    conn_limit: "10"
+    conn_limit: "12"
+    expires: "{{ (ansible_date_time.year | int) + 1 }}-01-01 00:00"

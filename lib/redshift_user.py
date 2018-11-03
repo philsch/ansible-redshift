@@ -137,7 +137,7 @@ def user_change(cursor, user, password, flags, expires, conn_limit, type = 'CREA
     if password is not None:
         query.append("WITH PASSWORD \'%(password)s\'")
     if expires is not None:
-        query.append("VALID UNTIL %(expires)s")
+        query.append("VALID UNTIL \'%(expires)s\'")
     if conn_limit is not None:
         query.append("CONNECTION LIMIT %(conn_limit)s")
     flags = check_flags(flags, PERMISSION_LEVEL_USER)
