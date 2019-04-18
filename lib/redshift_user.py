@@ -192,9 +192,8 @@ def group_delete(cursor, group):
     return True
 
 
-def group_assign(cursor, group, user):
-    """Adds user to the group and removes the user from not mentioned groups"""
-    #TODO: support multiple groups
+def group_assign(cursor, groups, user):
+    """Adds user to the groups and removes the user from not mentioned groups"""
 
     user_id = get_user_id(cursor, user)
 
@@ -205,25 +204,26 @@ def group_assign(cursor, group, user):
     cursor.execute(query % query_params)
     list_of_groups = map(lambda el: el[0], cursor.fetchall())
 
-    assignment_updated = False
-    already_assigned = False
+    assignment_updated = 0
+    already_assigned = {}
 
     for member_of_group in list_of_groups:
-        if member_of_group != group:
+        if member_of_group not in groups:
             query_params = {'drop_group': member_of_group, 'drop_user': user}
             query = 'ALTER GROUP %(drop_group)s DROP USER %(drop_user)s'
             cursor.execute(query % query_params)
-            assignment_updated = True
+            assignment_updated += 1
         else:
-            already_assigned = True
+            already_assigned[member_of_group] = True
 
-    if group is not None and group != '' and already_assigned is False:
-        query_params = {'group': group, 'add_user': user}
-        query = 'ALTER GROUP %(group)s ADD USER %(add_user)s'
-        cursor.execute(query % query_params)
-        assignment_updated = True
+    for group in groups:
+        if group is not None and group != '' and already_assigned.get(group) is None:
+            query_params = {'group': group, 'add_user': user}
+            query = 'ALTER GROUP %(group)s ADD USER %(add_user)s'
+            cursor.execute(query % query_params)
+            assignment_updated += 1
 
-    return assignment_updated
+    return bool(assignment_updated)
 
 
 def apply_privs(cursor, privs, user, group):
@@ -293,7 +293,7 @@ def main():
             user=dict(default=''),
             password=dict(default=None, no_log=True),
             update_password=dict(default="always", choices=["always", "on_create"]),
-            group=dict(default=''),
+            group=dict(default=[], type='list'),
             state=dict(default="present", choices=["absent", "present"]),
             permission_flags=dict(default=[], type='list'),
             privs=dict(default=[], type='list'),
