@@ -353,9 +353,9 @@ def main():
     kw = {'user': user, 'group': group}
     changed = False
     user_added = False
-    group_added = False
+    group_added = 0
     user_removed = False
-    group_removed = False
+    group_removed = 0
 
     # ===========================================
     # Main decision tree
@@ -375,10 +375,12 @@ def main():
                     updated_user_data = get_user(cursor, user)
                     changed = update_password == "always" or current_user_data != updated_user_data
 
-            if user == '' and group != '' and not group_exists(cursor, group):
-                group_add(cursor, group)
-                changed = True
-                group_added = True
+            if user == '' and bool(group) is True:
+                for _group in group:
+                    if not group_exists(cursor, _group):
+                        group_add(cursor, _group)
+                        changed += 1
+                        group_added += 1
 
             group_updated = False
             if user != '':
@@ -391,16 +393,17 @@ def main():
         # absent case
         else:
             if user != '' and user_exists(cursor, user):
-                group_assign(cursor, None, user)
+                group_assign(cursor, [], user)
                 user_delete(cursor, user)
                 changed = True
                 user_removed = True
 
-            if user == '' and group != '' and group_exists(cursor, group):
-                group_delete(cursor, group)
-                changed = True
-                group_removed = True
-
+            if user == '' and bool(group) is True:
+                for _group in group:
+                    if group_exists(cursor, _group):
+                        group_delete(cursor, _group)
+                    changed += 1
+                    group_removed +=1
 
     except ValueError:
         e = get_exception()
@@ -417,11 +420,11 @@ def main():
 
     cursor.close()
 
-    kw['changed'] = changed
-    kw['user_added'] = user_added
-    kw['group_added'] = group_added
-    kw['user_removed'] = user_removed
-    kw['group_removed'] = group_removed
+    kw['changed'] = bool(changed)
+    kw['user_added'] = bool(user_added)
+    kw['group_added'] = bool(group_added)
+    kw['user_removed'] = bool(user_removed)
+    kw['group_removed'] = bool(group_removed)
     module.exit_json(**kw)
 
 
